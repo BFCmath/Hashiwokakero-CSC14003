@@ -23,8 +23,10 @@ The `cnf_encoder.py` module translates the rules of Hashiwokakero into Conjuncti
     - Adds clauses ensuring `single` and `double` are mutually exclusive.
     - Enforces `active <-> (single OR double)`.
   - `_encode_island_degrees()`:
-    - Uses `pysat.pb.PBEnc` (Pseudo-Boolean encoding) to enforce `sum(bridges) == target`.
-    - Weights: `single` contributes 1, `double` contributes 2.
+    - Uses `pysat.card.CardEnc` (Cardinality Encoding) to enforce `sum(bridges) == target`.
+    - **Weighted Encoding**: Since `CardEnc` expects unweighted inputs, we duplicate the literals for double bridges (weight 2).
+    - **Totalizer**: Uses the Totalizer encoding (`encoding=1`) for robustness.
+    - **Synchronization**: Explicitly manages variable IDs (`top_id`) to prevent collisions between game variables and auxiliary encoding variables.
   - `_encode_crossing_constraints()`:
     - Identifies cells where horizontal and vertical corridors overlap.
     - Adds clauses `NOT(h_active) OR NOT(v_active)` for every such intersection, preventing collisions.

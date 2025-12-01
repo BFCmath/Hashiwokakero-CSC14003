@@ -47,7 +47,12 @@ Example: An island with target 3 connected to corridors $X$ and $Y$.
 - **Weights**: Single bridges count as 1, Double bridges count as 2.
 - **Formula**: $1 \cdot S_X + 2 \cdot D_X + 1 \cdot S_Y + 2 \cdot D_Y = 3$
 
-This is a "Pseudo-Boolean" constraint. We use the PySAT library to convert this mathematical equality into a set of CNF clauses. It generates a complex web of helper variables and clauses that are only satisfiable if the sum is exactly 3.
+We use `pysat.card.CardEnc` (Cardinality Encoding) to enforce this.
+Since `CardEnc` typically handles unweighted sums (count of True variables = K), we use a **duplication trick** for weights:
+- We pass the list of literals to `CardEnc` as: `[S_X, D_X, D_X, S_Y, D_Y, D_Y]`.
+- The variable $D_X$ appears twice. If $D_X$ is True, it contributes 2 to the count.
+- We use the **Totalizer** encoding (`encoding=1`) which is robust and efficient for these sums.
+- We explicitly synchronize variable IDs to ensure the auxiliary variables created by the encoding do not collide with our game variables.
 
 ## 3. The SAT Solving Process
 
