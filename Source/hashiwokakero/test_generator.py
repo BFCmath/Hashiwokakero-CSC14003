@@ -153,7 +153,7 @@ class TestGenerator:
                            f"Choose from: {list(DIFFICULTY_CONFIGS.keys())}")
         
         # Retry loop in case generation fails (rare but possible)
-        max_attempts = 1
+        max_attempts = 100
         current_seed = self.seed
         for attempt in range(max_attempts):
             try:
@@ -233,15 +233,15 @@ class TestGenerator:
         occupied_v: Set[Tuple[int, int]] = set()  # Vertical bridge cells
         
         # Step 1: Place first island randomly
-        first_row = self.rng.randint(2, size - 2)
-        first_col = self.rng.randint(2, size - 2)
+        first_row = self.rng.randint(1, size - 2)
+        first_col = self.rng.randint(1, size - 2)
         islands.append(PlacedIsland(id=1, row=first_row, col=first_col))
         island_positions.add((first_row, first_col))
         
         # Step 2: Incrementally add islands, each connected to existing network
         island_id = 1
         attempts = 0
-        max_attempts = num_islands * 50
+        max_attempts = num_islands * 500
         
         while len(islands) < num_islands and attempts < max_attempts:
             attempts += 1
