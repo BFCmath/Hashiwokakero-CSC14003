@@ -10,7 +10,7 @@ from .checker import ConstraintChecker
 from .grid import Grid
 from .sat_solver import PySatSolver
 from .solvers.astar import AStarSolver
-from .solvers.backtracking import BacktrackingSolver
+from .solvers.backtracking import BacktrackingSolver, BacktrackingFCSolver
 from .solvers.bruteforce import BruteForceSolver
 from .state import PuzzleState
 
@@ -33,7 +33,8 @@ class BenchmarkRunner:
         results = []
         results.append(self.run_pysat())
         # results.append(self.run_astar())
-        # results.append(self.run_backtracking())
+        results.append(self.run_backtracking())
+        results.append(self.run_backtracking_fc())
         # Brute force is often too slow for non-trivial puzzles, so we might want to skip it or warn
         # For now, we include it but users should be careful with large inputs
         results.append(self.run_bruteforce())
@@ -70,6 +71,14 @@ class BenchmarkRunner:
             return BenchmarkResult("A*", "ERROR", 0.0, {"error": str(e)}, None)
 
     def run_backtracking(self) -> BenchmarkResult:
+        if self.grid.height > 7:
+             return BenchmarkResult(
+                algorithm="Backtracking",
+                status="SKIPPED",
+                time_seconds=0.0,
+                metrics={"reason": " N > 7"},
+                solution=None,
+            )
         solver = BacktrackingSolver(self.grid, self.checker)
         try:
             result = solver.solve()
@@ -83,14 +92,36 @@ class BenchmarkRunner:
         except Exception as e:
             return BenchmarkResult("Backtracking", "ERROR", 0.0, {"error": str(e)}, None)
 
+    def run_backtracking_fc(self) -> BenchmarkResult:
+        """Run Backtracking with Forward Checking."""
+        if self.grid.height > 13:
+             return BenchmarkResult(
+                algorithm="Backtracking+FC",
+                status="SKIPPED",
+                time_seconds=0.0,
+                metrics={"reason": " N > 13"},
+                solution=None,
+            )
+        solver = BacktrackingFCSolver(self.grid, self.checker)
+        try:
+            result = solver.solve()
+            return BenchmarkResult(
+                algorithm="Backtracking+FC",
+                status=result.status,
+                time_seconds=result.elapsed,
+                metrics={"explored_nodes": result.explored},
+                solution=result.state,
+            )
+        except Exception as e:
+            return BenchmarkResult("Backtracking+FC", "ERROR", 0.0, {"error": str(e)}, None)
+
     def run_bruteforce(self) -> BenchmarkResult:
-        # Safety check: if puzzle is too large, skip brute force to avoid hanging
-        if len(self.grid.corridors) > 10:
+        if self.grid.height > 7:
              return BenchmarkResult(
                 algorithm="BruteForce",
                 status="SKIPPED",
                 time_seconds=0.0,
-                metrics={"reason": "Too many corridors (>10)"},
+                metrics={"reason": " N > 7"},
                 solution=None,
             )
 
