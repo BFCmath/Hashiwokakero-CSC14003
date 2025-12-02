@@ -81,6 +81,10 @@ Examples:
         help="Also print the solution (bridges)"
     )
     parser.add_argument(
+        "--visualize", "-v", action="store_true",default=True,
+        help="Visualize puzzles and solutions when generating"
+    )
+    parser.add_argument(
         "--info", action="store_true",
         help="Show difficulty configuration info and exit"
     )
@@ -105,16 +109,48 @@ Examples:
         print(f"Generating test suite with seed={args.seed}")
         print(f"Output directory: {args.suite_dir}")
         print(f"Tests per difficulty level: {args.tests_per_level}")
-        print("-" * 50)
+        print("=" * 60)
         
-        files = generate_test_suite(
-            base_seed=args.seed,
-            output_dir=args.suite_dir,
-            tests_per_difficulty=args.tests_per_level
-        )
+        # Generate puzzles with visualization
+        from hashiwokakero.test_generator import GenerationError
+        output_path = Path(args.suite_dir)
+        output_path.mkdir(parents=True, exist_ok=True)
         
-        print("-" * 50)
-        print(f"Generated {len(files)} test files in {args.suite_dir}/")
+        generated_files = []
+        test_number = 1
+        difficulties = ["easy", "medium", "hard", "expert"]
+        
+        for difficulty in difficulties:
+            for i in range(args.tests_per_level):
+                seed = args.seed * 100 + test_number
+                generator = TestGenerator(seed=seed)
+                
+                try:
+                    puzzle = generator.generate(difficulty=difficulty)
+                    
+                    filename = f"input-{test_number:02d}.txt"
+                    filepath = output_path / filename
+                    puzzle.save(filepath)
+                    generated_files.append(str(filepath))
+                    
+                    print(f"\n{'='*60}")
+                    print(f"TEST {test_number:02d}: {filename} ({difficulty})")
+                    print(f"Size: {puzzle.size}x{puzzle.size}, Islands: {len(puzzle.islands)}, Bridges: {len(puzzle.bridges)}")
+                    print("="*60)
+                    
+                    if args.visualize:
+                        print("\nPUZZLE:")
+                        print(puzzle.visualize_puzzle())
+                        print("\nSOLUTION:")
+                        print(puzzle.visualize_solution())
+                    
+                except GenerationError as e:
+                    print(f"\n❌ Failed to generate test {test_number}: {e}")
+                
+                test_number += 1
+        
+        print("\n" + "=" * 60)
+        print(f"✓ Generated {len(generated_files)} test files in {args.suite_dir}/")
         
     else:
         # Generate single puzzle

@@ -23,7 +23,7 @@ Author: Generated for CSC14003 - Intro to AI
 from __future__ import annotations
 
 import random
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
@@ -112,6 +112,164 @@ class GeneratedPuzzle:
     def save(self, path: str | Path) -> None:
         """Save puzzle to file."""
         Path(path).write_text(self.to_input_format(), encoding="utf-8")
+    
+    def visualize_solution(self) -> str:
+        """
+        Visualize the puzzle with its solution (bridges shown).
+        
+        Legend:
+        - Numbers (1-8): Islands with their target values
+        - ─ : Single horizontal bridge
+        - ═ : Double horizontal bridge
+        - │ : Single vertical bridge
+        - ║ : Double vertical bridge
+        - · : Empty cell
+        """
+        # Create display grid
+        grid = [['·' for _ in range(self.size)] for _ in range(self.size)]
+        
+        # Place bridges first (so islands override them at endpoints)
+        for bridge in self.bridges:
+            if bridge.direction == Direction.HORIZONTAL:
+                char = '═' if bridge.count == 2 else '─'
+            else:
+                char = '║' if bridge.count == 2 else '│'
+            
+            for row, col in bridge.cells:
+                grid[row][col] = char
+        
+        # Place islands (with their target numbers)
+        for island in self.islands:
+            # if grid[island.row][island.col] == '·':
+                grid[island.row][island.col] = str(island.target)
+        
+        # Build output string
+        lines = []
+        # Header with column numbers
+        header = "    " + " ".join(f"{i:2}" for i in range(self.size))
+        lines.append(header)
+        lines.append("   " + "─" * (self.size * 3))
+        
+        for row_idx, row in enumerate(grid):
+            row_str = f"{row_idx:2} │ " + "  ".join(row)
+            lines.append(row_str)
+        
+        # Add legend
+        lines.append("")
+        lines.append("Legend: ─/═ horizontal bridge (1/2), │/║ vertical bridge (1/2), · empty")
+        
+        return "\n".join(lines)
+    
+    def visualize_puzzle(self) -> str:
+        """
+        Visualize just the puzzle (without solution bridges).
+        """
+        lines = []
+        header = "    " + " ".join(f"{i:2}" for i in range(self.size))
+        lines.append(header)
+        lines.append("   " + "─" * (self.size * 3))
+        
+        for row_idx, row in enumerate(self.matrix):
+            cells = []
+            for cell in row:
+                if cell == 0:
+                    cells.append('·')
+                else:
+                    cells.append(str(cell))
+            row_str = f"{row_idx:2} │ " + "  ".join(cells)
+            lines.append(row_str)
+        
+        return "\n".join(lines)
+    
+    def verify_consistency(self) -> Tuple[bool, List[str]]:
+        """
+        Verify that the puzzle is consistent:
+        1. Each island's target matches the sum of connected bridge counts
+        2. Bridge cells are correct (between the two islands)
+        3. No crossing conflicts
+        
+        Returns:
+            (is_valid, list_of_errors)
+        """
+        errors = []
+        
+        # Build island lookup by id
+        island_by_id: Dict[int, PlacedIsland] = {i.id: i for i in self.islands}
+        
+        # 1. Verify targets match bridge counts
+        bridge_counts: Dict[int, int] = {i.id: 0 for i in self.islands}
+        for bridge in self.bridges:
+            bridge_counts[bridge.island_a] += bridge.count
+            bridge_counts[bridge.island_b] += bridge.count
+        
+        for island in self.islands:
+            expected = bridge_counts[island.id]
+            actual = island.target
+            if expected != actual:
+                errors.append(
+                    f"Island {island.id} at ({island.row},{island.col}): "
+                    f"target={actual} but bridge_sum={expected}"
+                )
+        
+        # 2. Verify bridge cells are correct
+        for bridge in self.bridges:
+            island_a = island_by_id[bridge.island_a]
+            island_b = island_by_id[bridge.island_b]
+            
+            if bridge.direction == Direction.HORIZONTAL:
+                # Same row
+                if island_a.row != island_b.row:
+                    errors.append(
+                        f"Bridge {bridge.island_a}-{bridge.island_b}: "
+                        f"HORIZONTAL but rows differ ({island_a.row} vs {island_b.row})"
+                    )
+                else:
+                    # Check cells
+                    min_col = min(island_a.col, island_b.col)
+                    max_col = max(island_a.col, island_b.col)
+                    expected_cells = set((island_a.row, c) for c in range(min_col + 1, max_col))
+                    actual_cells = set(bridge.cells)
+                    if expected_cells != actual_cells:
+                        errors.append(
+                            f"Bridge {bridge.island_a}-{bridge.island_b}: "
+                            f"cells mismatch. Expected {expected_cells}, got {actual_cells}"
+                        )
+            else:  # VERTICAL
+                # Same column
+                if island_a.col != island_b.col:
+                    errors.append(
+                        f"Bridge {bridge.island_a}-{bridge.island_b}: "
+                        f"VERTICAL but cols differ ({island_a.col} vs {island_b.col})"
+                    )
+                else:
+                    # Check cells
+                    min_row = min(island_a.row, island_b.row)
+                    max_row = max(island_a.row, island_b.row)
+                    expected_cells = set((r, island_a.col) for r in range(min_row + 1, max_row))
+                    actual_cells = set(bridge.cells)
+                    if expected_cells != actual_cells:
+                        errors.append(
+                            f"Bridge {bridge.island_a}-{bridge.island_b}: "
+                            f"cells mismatch. Expected {expected_cells}, got {actual_cells}"
+                        )
+        
+        # 3. Check for crossing conflicts
+        h_cells: Set[Tuple[int, int]] = set()
+        v_cells: Set[Tuple[int, int]] = set()
+        
+        for bridge in self.bridges:
+            if bridge.direction == Direction.HORIZONTAL:
+                for cell in bridge.cells:
+                    if cell in v_cells:
+                        errors.append(f"Crossing conflict at {cell}")
+                    h_cells.add(cell)
+            else:
+                for cell in bridge.cells:
+                    if cell in h_cells:
+                        errors.append(f"Crossing conflict at {cell}")
+                    v_cells.add(cell)
+        
+        return len(errors) == 0, errors
 
 
 class TestGenerator:
@@ -175,18 +333,6 @@ class TestGenerator:
         # Use incremental growth: place islands AND bridges together
         # This guarantees connectivity and no crossing issues
         islands, bridges = self._generate_puzzle_incremental(config)
-        
-        # Fix bridge island_b references (ith bridge connects to (i+1)th island)
-        fixed_bridges = []
-        for i, bridge in enumerate(bridges):
-            fixed_bridges.append(PlacedBridge(
-                island_a=bridge.island_a,
-                island_b=islands[i + 1].id,
-                direction=bridge.direction,
-                count=bridge.count,
-                cells=bridge.cells
-            ))
-        bridges = fixed_bridges
         
         # Find all possible corridors for extra bridges
         possible_edges = self._find_possible_edges(islands, size)
@@ -258,6 +404,9 @@ class TestGenerator:
             if new_island is not None:
                 island_id += 1
                 new_island.id = island_id
+                # Update bridge's island_b to the new island's ID
+                bridge.island_b = island_id
+                
                 islands.append(new_island)
                 island_positions.add((new_island.row, new_island.col))
                 bridges.append(bridge)
@@ -297,73 +446,92 @@ class TestGenerator:
         self.rng.shuffle(directions)
         
         for direction, dr, dc in directions:
-            # Random distance (2 to size//2)
+            # Try multiple distances for each direction
             min_dist = 2
             max_dist = min(size // 2, 6)
             if max_dist < min_dist:
                 max_dist = min_dist
             
-            distance = self.rng.randint(min_dist, max_dist)
+            # Generate shuffled list of distances to try
+            distances = list(range(min_dist, max_dist + 1))
+            self.rng.shuffle(distances)
             
-            new_row = source.row + dr * distance
-            new_col = source.col + dc * distance
-            
-            # Check bounds
-            if not (0 <= new_row < size and 0 <= new_col < size):
-                continue
-            
-            # Check not already occupied by island
-            if (new_row, new_col) in island_positions:
-                continue
-            
-            # Check minimum spacing from ALL existing islands
-            too_close = False
-            for island in existing_islands:
-                if island.row == source.row and island.col == source.col:
+            for distance in distances:
+                new_row = source.row + dr * distance
+                new_col = source.col + dc * distance
+                
+                # Check bounds
+                if not (0 <= new_row < size and 0 <= new_col < size):
                     continue
-                manhattan = abs(new_row - island.row) + abs(new_col - island.col)
-                if manhattan < config.min_spacing:
-                    too_close = True
-                    break
-            if too_close:
-                continue
-            
-            # Calculate bridge cells
-            if direction == Direction.HORIZONTAL:
-                if dc > 0:  # Right
-                    cells = tuple((source.row, c) for c in range(source.col + 1, new_col))
-                else:  # Left
-                    cells = tuple((source.row, c) for c in range(new_col + 1, source.col))
-            else:  # VERTICAL
-                if dr > 0:  # Down
-                    cells = tuple((r, source.col) for r in range(source.row + 1, new_row))
-                else:  # Up
-                    cells = tuple((r, source.col) for r in range(new_row + 1, source.row))
-            
-            # Check no island in the path
-            if any(cell in island_positions for cell in cells):
-                continue
-            
-            # Check crossing conflicts
-            if direction == Direction.HORIZONTAL:
-                if any(cell in occupied_v for cell in cells):
+                
+                # Check not already occupied by island
+                if (new_row, new_col) in island_positions:
                     continue
-            else:
-                if any(cell in occupied_h for cell in cells):
+                
+                # Check not on an existing bridge cell
+                if (new_row, new_col) in occupied_h or (new_row, new_col) in occupied_v:
                     continue
-            
-            # Success! Create new island and bridge
-            new_island = PlacedIsland(id=0, row=new_row, col=new_col)
-            count = 2 if self.rng.random() < config.double_bridge_prob else 1
-            bridge = PlacedBridge(
-                island_a=source.id,
-                island_b=0,  # Will be updated
-                direction=direction,
-                count=count,
-                cells=cells
-            )
-            
-            return new_island, bridge
+                
+                # Check minimum spacing from ALL existing islands
+                too_close = False
+                for island in existing_islands:
+                    if island.row == source.row and island.col == source.col:
+                        continue
+                    manhattan = abs(new_row - island.row) + abs(new_col - island.col)
+                    if manhattan < config.min_spacing:
+                        too_close = True
+                        break
+                if too_close:
+                    continue
+                
+                # Calculate bridge cells
+                if direction == Direction.HORIZONTAL:
+                    if dc > 0:  # Right
+                        cells = tuple((source.row, c) for c in range(source.col + 1, new_col))
+                    else:  # Left
+                        cells = tuple((source.row, c) for c in range(new_col + 1, source.col))
+                else:  # VERTICAL
+                    if dr > 0:  # Down
+                        cells = tuple((r, source.col) for r in range(source.row + 1, new_row))
+                    else:  # Up
+                        cells = tuple((r, source.col) for r in range(new_row + 1, source.row))
+                
+                # Bridge must have at least 1 cell between islands
+                if len(cells) < 1:
+                    continue
+                
+                # Check no island in the path
+                if any(cell in island_positions for cell in cells):
+                    continue
+                
+                # Check crossing conflicts AND same-direction overlap
+                if direction == Direction.HORIZONTAL:
+                    # Horizontal bridge cannot cross vertical bridges
+                    if any(cell in occupied_v for cell in cells):
+                        continue
+                    # Horizontal bridge cannot overlap with other horizontal bridges
+                    if any(cell in occupied_h for cell in cells):
+                        continue
+                else:
+                    # Vertical bridge cannot cross horizontal bridges
+                    if any(cell in occupied_h for cell in cells):
+                        continue
+                    # Vertical bridge cannot overlap with other vertical bridges
+                    if any(cell in occupied_v for cell in cells):
+                        continue
+                
+                # Success! Create new island and bridge
+                new_island = PlacedIsland(id=0, row=new_row, col=new_col)
+                count = 2 if self.rng.random() < config.double_bridge_prob else 1
+                bridge = PlacedBridge(
+                    island_a=source.id,
+                    island_b=0,  # Will be set after island gets its ID
+                    direction=direction,
+                    count=count,
+                    cells=cells
+                )
+                
+                return new_island, bridge
         
         return None, None
     
@@ -402,6 +570,10 @@ class TestGenerator:
                 island_a = sorted_islands[i]
                 island_b = sorted_islands[i + 1]
                 
+                # Skip if islands are adjacent (no cells for bridge)
+                if island_b.col - island_a.col < 2:
+                    continue
+                
                 # Check no islands in between
                 cells = tuple(
                     (row, c) for c in range(island_a.col + 1, island_b.col)
@@ -422,6 +594,10 @@ class TestGenerator:
             for i in range(len(sorted_islands) - 1):
                 island_a = sorted_islands[i]
                 island_b = sorted_islands[i + 1]
+                
+                # Skip if islands are adjacent (no cells for bridge)
+                if island_b.row - island_a.row < 2:
+                    continue
                 
                 # Check no islands in between
                 cells = tuple(
@@ -480,20 +656,23 @@ class TestGenerator:
             if self.rng.random() > config.extra_bridge_prob:
                 continue
             
-            # Check for crossing conflicts
+            # Check for crossing conflicts AND same-direction overlap
             if direction == Direction.HORIZONTAL:
                 # Horizontal bridge cannot cross vertical bridges
                 if any(cell in occupied_v for cell in cells):
+                    continue
+                # Horizontal bridge cannot overlap with other horizontal bridges
+                if any(cell in occupied_h for cell in cells):
                     continue
             else:
                 # Vertical bridge cannot cross horizontal bridges
                 if any(cell in occupied_h for cell in cells):
                     continue
+                # Vertical bridge cannot overlap with other vertical bridges
+                if any(cell in occupied_v for cell in cells):
+                    continue
             
             # Check target constraints (no island should exceed 8)
-            island_a_obj = next(i for i in islands if i.id == island_a)
-            island_b_obj = next(i for i in islands if i.id == island_b)
-            
             # Count current bridges for each island
             count_a = sum(
                 b.count for b in new_bridges
