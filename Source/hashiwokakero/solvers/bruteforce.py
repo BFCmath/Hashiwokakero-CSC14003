@@ -26,13 +26,15 @@ class BruteForceSolver:
 
     def solve(self) -> BruteForceResult:
         start = perf_counter()
-        order = list(self.grid.corridors.keys())
+        order = self._sort_corridors_by_mrv()
         visited = 0
 
         def dfs(index: int, state: PuzzleState) -> PuzzleState | None:
             nonlocal visited
             if index == len(order):
-                return state if state.is_goal() else None
+                if state.islands_satisfied() and state.is_connected():
+                    return state.copy()
+                return None
             corridor_id = order[index]
             for value in (0, 1, 2):
                 state.set_corridor_value(corridor_id, value)
@@ -49,3 +51,14 @@ class BruteForceSolver:
         result = dfs(0, initial)
         status = "SOLVED" if result else "FAILED"
         return BruteForceResult(result, perf_counter() - start, visited, status)
+
+    def _sort_corridors_by_mrv(self) -> List[int]:
+        def corridor_priority(corridor_id: int) -> tuple:
+            corridor = self.grid.corridors[corridor_id]
+            island_a = self.grid.islands[corridor.island_a]
+            island_b = self.grid.islands[corridor.island_b]
+            min_target = min(island_a.target, island_b.target)
+            sum_target = island_a.target + island_b.target
+            return (min_target, sum_target)
+        
+        return sorted(self.grid.corridors.keys(), key=corridor_priority)
