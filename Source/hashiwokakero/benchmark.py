@@ -32,8 +32,8 @@ class BenchmarkRunner:
     def run_all(self) -> List[BenchmarkResult]:
         results = []
         results.append(self.run_pysat())
-        results.append(self.run_astar())
-        results.append(self.run_backtracking())
+        # results.append(self.run_astar())
+        # results.append(self.run_backtracking())
         # Brute force is often too slow for non-trivial puzzles, so we might want to skip it or warn
         # For now, we include it but users should be careful with large inputs
         results.append(self.run_bruteforce())

@@ -69,22 +69,22 @@ class DifficultyConfig:
 # Predefined difficulty levels
 DIFFICULTY_CONFIGS = {
     "easy": DifficultyConfig(
-        size=7, min_islands=5, max_islands=15,
+        size=7, min_islands=10, max_islands=15,
         min_spacing=2, double_bridge_prob=0.2, extra_bridge_prob=0.1,
         name="easy"
     ),
     "medium": DifficultyConfig(
-        size=9, min_islands=10, max_islands=25,
+        size=9, min_islands=25, max_islands=30,
         min_spacing=2, double_bridge_prob=0.3, extra_bridge_prob=0.2,
         name="medium"
     ),
     "hard": DifficultyConfig(
-        size=13, min_islands=18, max_islands=45,
+        size=13, min_islands=40, max_islands=45,
         min_spacing=2, double_bridge_prob=0.4, extra_bridge_prob=0.3,
         name="hard"
     ),
     "expert": DifficultyConfig(
-        size=20, min_islands=30, max_islands=60,
+        size=20, min_islands=70, max_islands=80,
         min_spacing=2, double_bridge_prob=0.5, extra_bridge_prob=0.4,
         name="expert"
     ),
