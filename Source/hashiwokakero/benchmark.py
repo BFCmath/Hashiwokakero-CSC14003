@@ -13,7 +13,7 @@ from .solvers.astar import AStarSolver
 from .solvers.backtracking import BacktrackingSolver, BacktrackingFCSolver
 from .solvers.bruteforce import BruteForceSolver
 from .state import PuzzleState
-
+from .solvers.astar import Heuristic
 
 @dataclass
 class BenchmarkResult:
@@ -32,7 +32,7 @@ class BenchmarkRunner:
     def run_all(self) -> List[BenchmarkResult]:
         results = []
         results.append(self.run_pysat())
-        # results.append(self.run_astar())
+        results.append(self.run_astar())
         results.append(self.run_backtracking())
         results.append(self.run_backtracking_fc())
         # Brute force is often too slow for non-trivial puzzles, so we might want to skip it or warn
@@ -56,7 +56,7 @@ class BenchmarkRunner:
             return BenchmarkResult("PySAT", "ERROR", 0.0, {"error": str(e), "traceback": traceback.format_exc()}, None)
 
     def run_astar(self) -> BenchmarkResult:
-        solver = AStarSolver(self.checker)
+        solver = AStarSolver(self.checker, heuristic=Heuristic.composite)
         initial_state = PuzzleState(self.grid)
         try:
             result = solver.solve(initial_state)
@@ -65,7 +65,7 @@ class BenchmarkRunner:
                 status=result.status,
                 time_seconds=result.elapsed,
                 metrics={"expanded_nodes": result.expanded},
-                solution=result.state,
+                solution=result.state,                                                                                                                                                                                                                      
             )
         except Exception as e:
             return BenchmarkResult("A*", "ERROR", 0.0, {"error": str(e)}, None)
