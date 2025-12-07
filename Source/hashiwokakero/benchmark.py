@@ -14,7 +14,7 @@ from .solvers.astar import AStarSolver
 from .solvers.backtracking import BacktrackingSolver, BacktrackingFCSolver
 from .solvers.bruteforce import BruteForceSolver
 from .state import PuzzleState
-
+from .solvers.astar import Heuristic
 
 @dataclass
 class BenchmarkResult:
@@ -87,7 +87,7 @@ class BenchmarkRunner:
             return BenchmarkResult("PySAT", "ERROR", 0.0, 0.0, {"error": str(e), "traceback": traceback.format_exc()}, None)
 
     def run_astar(self) -> BenchmarkResult:
-        solver = AStarSolver(self.checker)
+        solver = AStarSolver(self.checker, heuristic=Heuristic.composite)
         initial_state = PuzzleState(self.grid)
         tracemalloc.start()
         try:
@@ -101,7 +101,7 @@ class BenchmarkRunner:
                 time_seconds=result.elapsed,
                 memory_peak_mb=peak / (1024 * 1024),
                 metrics={"expanded_nodes": result.expanded},
-                solution=result.state,
+                solution=result.state,                                                                                                                                                                                                                      
             )
         except Exception as e:
             tracemalloc.stop()
