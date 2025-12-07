@@ -30,9 +30,9 @@ def run_cli():
         sys.exit(1)
 
     print(f"Grid size: {grid.width}x{grid.height}, Islands: {len(grid.islands)}, Corridors: {len(grid.corridors)}")
-    print("-" * 60)
-    print(f"{'Algorithm':<15} | {'Status':<10} | {'Time (s)':<10} | {'Metrics'}")
-    print("-" * 60)
+    print("-" * 80)
+    print(f"{'Algorithm':<15} | {'Status':<10} | {'Time (s)':<10} | {'Mem (MB)':<10} | {'Metrics'}")
+    print("-" * 80)
 
     runner = BenchmarkRunner(grid)
     results = runner.run_all()
@@ -41,13 +41,13 @@ def run_cli():
 
     for res in results:
         metrics_str = ", ".join(f"{k}={v}" for k, v in res.metrics.items())
-        print(f"{res.algorithm:<15} | {res.status:<10} | {res.time_seconds:<10.4f} | {metrics_str}")
+        print(f"{res.algorithm:<15} | {res.status:<10} | {res.time_seconds:<10.4f} | {res.memory_peak_mb:<10.2f} | {metrics_str}")
         
         if res.status == "SAT" or res.status == "SOLVED":
             if best_result is None:
                 best_result = res
 
-    print("-" * 60)
+    print("-" * 80)
 
     if best_result and best_result.solution:
         renderer = Renderer(best_result.solution)
