@@ -96,36 +96,53 @@ class Heuristic:
 class AStarSolver:
     def __init__(self, checker: ConstraintChecker, heuristic: Callable[[PuzzleState], float] | None = None) -> None:
         self.checker = checker
-        self.heuristic = heuristic or Heuristic.deficit
+        self.heuristic = heuristic or Heuristic.composite
 
     def solve(self, initial: PuzzleState) -> SearchResult:
         start = perf_counter()
         grid = initial.grid
-        # Pre-compute corridor order for O(C) signature (no sorting)
-        cid_list: List[int] = sorted(grid.corridors.keys())
-        cid_index = {cid: i for i, cid in enumerate(cid_list)}
-        num_corridors = len(cid_list)
+        
+        # Pre-compute crossing conflicts
+        conflicts: Dict[int, List[int]] = {cid: [] for cid in grid.corridors}
+        corridor_items = list(grid.corridors.values())
+        for i in range(len(corridor_items)):
+            c1 = corridor_items[i]
+            c1_cells = set(c1.cells)
+            for j in range(i + 1, len(corridor_items)):
+                c2 = corridor_items[j]
+                if not c1_cells.isdisjoint(c2.cells):
+                    conflicts[c1.identifier].append(c2.identifier)
+                    conflicts[c2.identifier].append(c1.identifier)
 
-        def signature(bc: Dict[int, int]) -> Tuple[int, ...]:
-            vals = [0] * num_corridors
-            for cid, v in bc.items():
-                vals[cid_index[cid]] = v
-            return tuple(vals)
+        # OPTIMIZATION 1: Sparse Signature
+        # Instead of a dense tuple of all corridors, we only store non-zero bridges.
+        # This reduces memory and hashing cost significantly for large maps.
+        def signature(bc: Dict[int, int]) -> Tuple[Tuple[int, int], ...]:
+            # Sort by corridor ID to ensure uniqueness
+            return tuple(sorted(bc.items()))
 
         # Precompute islands list for MRV selection
         islands = list(grid.islands.values())
 
         counter = 0
         init_sig = signature(initial.bridge_counts)
-        g_score: Dict[Tuple[int, ...], int] = {init_sig: 0}
-        # Heap entries: (f, counter, g, sig, state)
-        open_heap: List[Tuple[float, int, int, Tuple[int, ...], PuzzleState]] = []
-        heapq.heappush(open_heap, (self.heuristic(initial), counter, 0, init_sig, initial))
-        closed: set[Tuple[int, ...]] = set()
+        g_score: Dict[Tuple[Tuple[int, int], ...], int] = {init_sig: 0}
+        
+        # OPTIMIZATION 2: Tie-breaking
+        # Heap entries: (f, h, counter, g, sig, state)
+        # We add 'h' as the second element. Python's heap is a min-heap.
+        # If 'f' is equal, it will compare 'h'. Smaller 'h' (closer to goal) is preferred.
+        # This forces the algorithm to dive deep (DFS-like) rather than spreading out (BFS-like).
+        init_h = self.heuristic(initial)
+        open_heap: List[Tuple[float, float, int, int, Tuple[Tuple[int, int], ...], PuzzleState]] = []
+        heapq.heappush(open_heap, (init_h, init_h, counter, 0, init_sig, initial))
+        
+        closed: set[Tuple[Tuple[int, int], ...]] = set()
         expanded = 0
 
         while open_heap:
-            _, _, g, sig, current = heapq.heappop(open_heap)
+            f, h, _, g, sig, current = heapq.heappop(open_heap)
+            
             if sig in closed:
                 continue
             if current.is_goal():
@@ -142,7 +159,7 @@ class AStarSolver:
                     best_rem = rem
                     best_island = isl
             if best_island is None:
-                continue  # no unsatisfied island but not goal (connectivity issue)
+                continue
 
             # Expand only corridors incident to best_island
             for corridor in grid.corridors_incident_to(best_island.identifier):
@@ -150,7 +167,8 @@ class AStarSolver:
                 if cur_val >= 2:
                     continue
                 new_val = cur_val + 1
-                # Quick feasibility: neither endpoint exceeds target
+                
+                # Quick feasibility checks
                 isl_a = grid.islands[corridor.island_a]
                 isl_b = grid.islands[corridor.island_b]
                 if current.remaining_degree(isl_a) < new_val - cur_val:
@@ -158,21 +176,37 @@ class AStarSolver:
                 if current.remaining_degree(isl_b) < new_val - cur_val:
                     continue
 
+                # Fast crossing check
+                if cur_val == 0:
+                    is_blocked = False
+                    for conflict_cid in conflicts[corridor.identifier]:
+                        if current.bridge_counts.get(conflict_cid, 0) > 0:
+                            is_blocked = True
+                            break
+                    if is_blocked:
+                        continue
+
                 # Build next state
                 next_bc = current.bridge_counts.copy()
                 next_bc[corridor.identifier] = new_val
                 next_sig = signature(next_bc)
                 tentative_g = g + 1
+                
                 if tentative_g >= g_score.get(next_sig, float("inf")):
                     continue
 
                 next_state = PuzzleState(grid, next_bc)
-                if not self.checker.is_valid_assignment(next_state):
-                    continue
-
+                
                 g_score[next_sig] = tentative_g
-                f = tentative_g + self.heuristic(next_state)
+                h_new = self.heuristic(next_state)
+                
+                # OPTIMIZATION 3: Weighted A* (Optional but recommended for speed)
+                # f = g + w * h. Using w=1.0 is standard A*.
+                # Using w > 1.0 (e.g., 1.1) makes it greedier and faster, but theoretically suboptimal.
+                # Given the tie-breaking fix above, w=1.0 might be enough, but let's stick to standard A*.
+                f_new = tentative_g + h_new
+                
                 counter += 1
-                heapq.heappush(open_heap, (f, counter, tentative_g, next_sig, next_state))
+                heapq.heappush(open_heap, (f_new, h_new, counter, tentative_g, next_sig, next_state))
 
         return SearchResult(None, perf_counter() - start, expanded, "FAILED")

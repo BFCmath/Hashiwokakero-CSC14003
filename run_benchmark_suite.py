@@ -77,7 +77,7 @@ def main():
     print(f"Found {len(input_files)} input files.")
     
     # Data structure for plotting:
-    # { algorithm_name: [(num_islands, time, memory, nodes_visited, total_bridges), ...] }
+    # { algorithm_name: [(num_islands, time, memory, nodes_visited, total_bridges, grid_area), ...] }
     plot_data = {} 
     
     with open(csv_path, 'w', newline='') as csvfile:
@@ -95,6 +95,7 @@ def main():
                 # grid.islands is a Dict[int, Island], so we need to iterate over values
                 total_bridges = sum(island.target for island in grid.islands.values())
                 grid_size = f"{grid.width}x{grid.height}"
+                grid_area = grid.width * grid.height
                 
                 print(f"Grid size: {grid.width}x{grid.height}, Islands: {len(grid.islands)}, Total Bridges: {total_bridges}")
                 print("-" * 115)
@@ -130,8 +131,8 @@ def main():
                     if result.status == "SOLVED" or result.status == "SAT":
                         if result.algorithm not in plot_data:
                             plot_data[result.algorithm] = []
-                        # Store tuple: (num_islands, time, memory, nodes, total_bridges)
-                        plot_data[result.algorithm].append((num_islands, result.time_seconds, result.memory_peak_mb, nodes_count, total_bridges))
+                        # Store tuple: (num_islands, time, memory, nodes, total_bridges, grid_area)
+                        plot_data[result.algorithm].append((num_islands, result.time_seconds, result.memory_peak_mb, nodes_count, total_bridges, grid_area))
                 
                 print("-" * 115)
                         
@@ -230,6 +231,68 @@ def generate_plots(plot_data, output_dir):
     plt.legend()
     plt.grid(True)
     plt.savefig(output_dir / "time_vs_bridges.png")
+    plt.close()
+
+    # 6. Time vs Island Density (Phase Transition Analysis)
+    plt.figure(figsize=(10, 6))
+    for algo, data in plot_data.items():
+        # Density = Num Islands / Grid Area
+        # x[0] is num_islands, x[5] is grid_area
+        xy = [(d[0]/d[5], d[1]) for d in data if d[5] > 0]
+        xy.sort(key=lambda k: k[0])
+        
+        if xy:
+            x, y = zip(*xy)
+            plt.plot(x, y, marker='o', linestyle='None', label=algo)
+
+    plt.xlabel('Island Density (Islands / Grid Area)')
+    plt.ylabel('Time (seconds)')
+    plt.title('Time vs Island Density (Phase Transition)')
+    plt.legend()
+    plt.grid(True)
+    plt.savefig(output_dir / "time_vs_density.png")
+    plt.close()
+
+    # 7. Time vs Average Bridges per Island (Constraint Tightness)
+    plt.figure(figsize=(10, 6))
+    for algo, data in plot_data.items():
+        # Avg Bridges = Total Bridges / Num Islands
+        # x[4] is total_bridges, x[0] is num_islands
+        xy = [(d[4]/d[0], d[1]) for d in data if d[0] > 0]
+        xy.sort(key=lambda k: k[0])
+        
+        if xy:
+            x, y = zip(*xy)
+            plt.plot(x, y, marker='o', linestyle='None', label=algo)
+
+    plt.xlabel('Avg Bridges per Island (Constraint Tightness)')
+    plt.ylabel('Time (seconds)')
+    plt.title('Time vs Average Bridges per Island')
+    plt.legend()
+    plt.grid(True)
+    plt.savefig(output_dir / "time_vs_avg_bridges.png")
+    plt.close()
+
+    # 8. Nodes per Second (Implementation Efficiency)
+    plt.figure(figsize=(10, 6))
+    for algo, data in plot_data.items():
+        # Nodes per Sec = Nodes / Time
+        # x[3] is nodes, x[1] is time
+        # Filter out very small times to avoid division by zero spikes
+        xy = [(d[0], d[3]/d[1]) for d in data if d[1] > 0.001]
+        xy.sort(key=lambda k: k[0])
+        
+        if xy:
+            x, y = zip(*xy)
+            plt.plot(x, y, marker='o', linestyle='None', label=algo)
+
+    plt.xlabel('Number of Islands')
+    plt.ylabel('Nodes per Second (Log Scale)')
+    plt.yscale('log')
+    plt.title('Algorithm Efficiency: Nodes Processed per Second')
+    plt.legend()
+    plt.grid(True, which="both", ls="-")
+    plt.savefig(output_dir / "efficiency_nodes_per_sec.png")
     plt.close()
     
     print(f"Plots saved to {output_dir}")
