@@ -39,7 +39,7 @@ class BenchmarkRunner:
         results.append(self.run_backtracking_fc())
         # Brute force is often too slow for non-trivial puzzles, so we might want to skip it or warn
         # For now, we include it but users should be careful with large inputs
-        results.append(self.run_bruteforce())
+        # results.append(self.run_bruteforce())
         return results
 
     def _run_with_profiling(self, name: str, func) -> BenchmarkResult:
@@ -167,13 +167,13 @@ class BenchmarkRunner:
             return BenchmarkResult("Backtracking+FC", "ERROR", 0.0, 0.0, {"error": str(e)}, None)
 
     def run_bruteforce(self) -> BenchmarkResult:
-        if self.grid.height > 5: # Brute force is very slow
+        if self.grid.height > 7:
              return BenchmarkResult(
                 algorithm="BruteForce",
                 status="SKIPPED",
                 time_seconds=0.0,
                 memory_peak_mb=0.0,
-                metrics={"reason": " N > 5"},
+                metrics={"reason": " N > 7"},
                 solution=None,
             )
         solver = BruteForceSolver(self.grid, self.checker)

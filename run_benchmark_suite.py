@@ -38,6 +38,8 @@ def main():
     parser = argparse.ArgumentParser(description="Run benchmark suite")
     parser.add_argument("--limit", type=int, help="Limit number of files to run")
     parser.add_argument("--file", type=str, help="Specific file name to run (e.g. input-01.txt)")
+    parser.add_argument("--start", type=int, help="Start index (1-based) of files to run")
+    parser.add_argument("--end", type=int, help="End index (1-based) of files to run")
     args = parser.parse_args()
 
     inputs_dir = source_dir / "Inputs"
@@ -53,8 +55,20 @@ def main():
         if not input_files:
             print(f"File {args.file} not found in {inputs_dir}")
             return
-    elif args.limit:
-        input_files = input_files[:args.limit]
+    else:
+        start_idx = 0
+        end_idx = len(input_files)
+        
+        if args.start:
+            start_idx = max(0, args.start - 1)
+        
+        if args.end:
+            end_idx = min(len(input_files), args.end)
+            
+        if args.limit:
+            end_idx = min(end_idx, start_idx + args.limit)
+            
+        input_files = input_files[start_idx:end_idx]
     
     if not input_files:
         print(f"No input files found in {inputs_dir}")
