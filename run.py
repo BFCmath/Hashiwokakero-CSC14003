@@ -188,7 +188,7 @@ def main():
     if write_csv:
         csv_file.close()
         print(f"\nBenchmark data saved to {csv_path}")
-        print("To generate plots, run: python generate_advanced_plots.py")
+        print("To generate plots, run: python visualize_plots.py")
 
 if __name__ == "__main__":
     main()

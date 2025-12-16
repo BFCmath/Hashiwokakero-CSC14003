@@ -88,7 +88,7 @@ def draw_grid(ax, grid, title, is_output=False):
                 ax.add_patch(circle)
                 ax.text(x, y, val, ha='center', va='center', fontsize=14, fontweight='bold', zorder=3)
 
-def visualize(input_file, output_file):
+def visualize(input_file, output_file, save_path=None):
     try:
         input_grid = parse_input(input_file)
         output_grid = parse_output(output_file)
@@ -103,12 +103,28 @@ def visualize(input_file, output_file):
     
     plt.tight_layout()
     plt.subplots_adjust(wspace=0.3)
-    plt.show()
+    
+    if save_path:
+        save_p = Path(save_path)
+        # If path is a directory or has no extension, treat as directory
+        if save_p.suffix == '':
+            save_p.mkdir(parents=True, exist_ok=True)
+            input_name = Path(input_file).stem
+            save_p = save_p / f"{input_name}_viz.png"
+        else:
+            save_p.parent.mkdir(parents=True, exist_ok=True)
+            
+        plt.savefig(save_p)
+        print(f"Visualization saved to {save_p}")
+        plt.close()
+    else:
+        plt.show()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Visualize Hashiwokakero Puzzle")
     parser.add_argument("input_file", help="Path to input file")
     parser.add_argument("output_file", help="Path to output file")
+    parser.add_argument("--save", help="Path/Directory to save the visualization image", default=None)
     args = parser.parse_args()
     
-    visualize(args.input_file, args.output_file)
+    visualize(args.input_file, args.output_file, args.save)
