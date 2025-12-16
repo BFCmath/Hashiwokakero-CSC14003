@@ -30,9 +30,9 @@ def run_cli():
         sys.exit(1)
 
     print(f"Grid size: {grid.width}x{grid.height}, Islands: {len(grid.islands)}, Corridors: {len(grid.corridors)}")
-    print("-" * 80)
+    print("-" * 60)
     print(f"{'Algorithm':<15} | {'Status':<10} | {'Time (s)':<10} | {'Mem (MB)':<10} | {'Metrics'}")
-    print("-" * 80)
+    print("-" * 60)
 
     runner = BenchmarkRunner(grid)
     results = runner.run_all()
@@ -47,7 +47,7 @@ def run_cli():
             if best_result is None:
                 best_result = res
 
-    print("-" * 80)
+    print("-" * 60)
 
     if best_result and best_result.solution:
         renderer = Renderer(best_result.solution)
