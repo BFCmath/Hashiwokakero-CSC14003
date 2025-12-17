@@ -10,7 +10,7 @@ from typing import Any, Dict, List
 from .checker import ConstraintChecker
 from .grid import Grid
 from .sat_solver import PySatSolver
-from .solvers.astar import AStarSolver
+from .solvers.astar import AStarFCSolver
 from .solvers.backtracking import BacktrackingSolver, BacktrackingFCSolver
 from .solvers.bruteforce import BruteForceSolver
 from .state import PuzzleState
@@ -38,11 +38,11 @@ class BenchmarkRunner:
         # Run A* variants
         results.append(self.run_astar_variant("A* (Composite)", Heuristic.composite))
         results.append(self.run_astar_variant("A* (Deficit)", Heuristic.deficit))
-        results.append(self.run_astar_variant("A* (MinConn)", Heuristic.min_conn))
-        results.append(self.run_astar_variant("A* (Bottleneck)", Heuristic.bottleneck_corrected))
+        # results.append(self.run_astar_variant("A* (MinConn)", Heuristic.min_conn))
+        # results.append(self.run_astar_variant("A* (Bottleneck)", Heuristic.bottleneck_corrected))
 
         results.append(self.run_backtracking())
-        results.append(self.run_backtracking_fc())
+        # results.append(self.run_backtracking_fc())
         # Brute force is often too slow for non-trivial puzzles, so we might want to skip it or warn
         # For now, we include it but users should be careful with large inputs
         # results.append(self.run_bruteforce())
@@ -93,7 +93,7 @@ class BenchmarkRunner:
             return BenchmarkResult("PySAT", "ERROR", 0.0, 0.0, {"error": str(e), "traceback": traceback.format_exc()}, None)
 
     def run_astar_variant(self, name: str, heuristic_func) -> BenchmarkResult:
-        solver = AStarSolver(self.checker, heuristic=heuristic_func)
+        solver = AStarFCSolver(self.checker, heuristic=heuristic_func)
         initial_state = PuzzleState(self.grid)
         tracemalloc.start()
         try:
