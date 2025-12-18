@@ -38,14 +38,14 @@ class BenchmarkRunner:
         # Run A* variants
         results.append(self.run_astar_variant("A* (Composite)", Heuristic.composite))
         results.append(self.run_astar_variant("A* (Deficit)", Heuristic.deficit))
-        # results.append(self.run_astar_variant("A* (MinConn)", Heuristic.min_conn))
-        # results.append(self.run_astar_variant("A* (Bottleneck)", Heuristic.bottleneck_corrected))
+        results.append(self.run_astar_variant("A* (MinConn)", Heuristic.min_conn))
+        results.append(self.run_astar_variant("A* (Bottleneck)", Heuristic.bottleneck_corrected))
 
-        results.append(self.run_backtracking())
-        # results.append(self.run_backtracking_fc())
+        # results.append(self.run_backtracking())
+        results.append(self.run_backtracking_fc())
         # Brute force is often too slow for non-trivial puzzles, so we might want to skip it or warn
         # For now, we include it but users should be careful with large inputs
-        # results.append(self.run_bruteforce())
+        results.append(self.run_bruteforce())
         return results
 
     def _run_with_profiling(self, name: str, func) -> BenchmarkResult:
@@ -146,7 +146,7 @@ class BenchmarkRunner:
         """Run Backtracking with Forward Checking."""
         if self.grid.height > 13:
              return BenchmarkResult(
-                algorithm="Backtracking+FC",
+                algorithm="Backtracking",
                 status="SKIPPED",
                 time_seconds=0.0,
                 memory_peak_mb=0.0,

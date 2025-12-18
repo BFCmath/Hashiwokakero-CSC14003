@@ -160,7 +160,7 @@ def main():
             print("-" * 115)
 
             # Rendering Logic
-            if (args.verbose or args.output) and best_result and best_result.solution:
+            if best_result and best_result.solution:
                 renderer = Renderer(best_result.solution)
                 output_text = renderer.render()
                 
@@ -168,6 +168,7 @@ def main():
                     print("\nSolution Visualization:")
                     print(output_text)
                 
+                # Determine output path
                 if args.output:
                     # If processing multiple files, we might need unique names, but usually --output is used with --file
                     out_path = Path(args.output)
@@ -176,10 +177,17 @@ def main():
                         if out_path.is_dir() or (not out_path.suffix):
                             out_path.mkdir(parents=True, exist_ok=True)
                             out_path = out_path / f"output-{file_path.stem}.txt"
+                else:
+                    # Default behavior: Save to Outputs/output-xx.txt
+                    outputs_dir = current_dir / "Outputs"
+                    outputs_dir.mkdir(exist_ok=True)
+                    # Replace 'input' with 'output' in filename if present, else prepend
+                    name_part = file_path.stem.replace("input", "output") if "input" in file_path.stem else f"output-{file_path.stem}"
+                    out_path = outputs_dir / f"{name_part}.txt"
                     
-                    out_path.parent.mkdir(parents=True, exist_ok=True)
-                    out_path.write_text(output_text, encoding="utf-8")
-                    print(f"Solution saved to {out_path}")
+                out_path.parent.mkdir(parents=True, exist_ok=True)
+                out_path.write_text(output_text, encoding="utf-8")
+                print(f"Solution saved to {out_path}")
 
         except Exception as e:
             print(f"Error processing {file_path.name}: {e}")
