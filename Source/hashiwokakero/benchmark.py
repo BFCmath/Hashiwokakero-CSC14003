@@ -161,7 +161,7 @@ class BenchmarkRunner:
             tracemalloc.stop()
 
             return BenchmarkResult(
-                algorithm="Backtracking+FC",
+                algorithm="Backtracking",
                 status=result.status,
                 time_seconds=result.elapsed,
                 memory_peak_mb=peak / (1024 * 1024),
@@ -170,7 +170,7 @@ class BenchmarkRunner:
             )
         except Exception as e:
             tracemalloc.stop()
-            return BenchmarkResult("Backtracking+FC", "ERROR", 0.0, 0.0, {"error": str(e)}, None)
+            return BenchmarkResult("Backtracking", "ERROR", 0.0, 0.0, {"error": str(e)}, None)
 
     def run_bruteforce(self) -> BenchmarkResult:
         if self.grid.height > 7:
