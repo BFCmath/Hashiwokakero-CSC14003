@@ -2,3 +2,4 @@ python-sat
 matplotlib
 seaborn
 pandas
+bs4

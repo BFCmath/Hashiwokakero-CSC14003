@@ -3,13 +3,18 @@ from bs4 import BeautifulSoup
 import time
 
 # --- CẤU HÌNH ---
-SIZES = [7, 9, 13, 20]      # Các kích thước cần lấy
+SIZES = [7, 9, 11, 13,17]      # Các kích thước cần lấy
 SAMPLES_PER_SIZE = 5        # Số lượng bài cần lấy mỗi size
-START_INDEX = 21            # Tên file bắt đầu từ input-21.txt
+START_INDEX = 26            # Tên file bắt đầu từ input-21.txt
 BASE_URL = "https://menneske.no/hashi/{}x{}/eng/showpuzzle.html?number={}"
+BASE_URL_11 = "https://menneske.no/hashi/eng/showpuzzle.html?number={}"  # URL đặc biệt cho 11x11
 
 def get_puzzle_matrix(size, number):
-    url = BASE_URL.format(size, size, number)
+    # Chọn URL phù hợp với size
+    if size == 11:
+        url = BASE_URL_11.format(number)
+    else:
+        url = BASE_URL.format(size, size, number)
     try:
         # Giả lập trình duyệt
         headers = {'User-Agent': 'Mozilla/5.0'}

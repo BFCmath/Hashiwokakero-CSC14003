@@ -68,25 +68,30 @@ class DifficultyConfig:
 
 # Predefined difficulty levels
 DIFFICULTY_CONFIGS = {
-    "easy": DifficultyConfig(
+    "7x7": DifficultyConfig(
         size=7, min_islands=10, max_islands=15,
-        min_spacing=2, double_bridge_prob=0.2, extra_bridge_prob=0.1,
-        name="easy"
+        min_spacing=2, double_bridge_prob=0.3, extra_bridge_prob=0.4,
+        name="7x7"
     ),
-    "medium": DifficultyConfig(
+    "9x9": DifficultyConfig(
         size=9, min_islands=25, max_islands=30,
-        min_spacing=2, double_bridge_prob=0.3, extra_bridge_prob=0.2,
-        name="medium"
+        min_spacing=2, double_bridge_prob=0.3, extra_bridge_prob=0.4,
+        name="9x9"
     ),
-    "hard": DifficultyConfig(
-        size=13, min_islands=40, max_islands=45,
-        min_spacing=2, double_bridge_prob=0.4, extra_bridge_prob=0.3,
-        name="hard"
+    "11x11": DifficultyConfig(
+        size=11, min_islands=30, max_islands=35,
+        min_spacing=2, double_bridge_prob=0.3, extra_bridge_prob=0.4,
+        name="11x11"
     ),
-    "expert": DifficultyConfig(
-        size=20, min_islands=70, max_islands=80,
+    "13x13": DifficultyConfig(
+        size=13, min_islands=30, max_islands=35,
         min_spacing=2, double_bridge_prob=0.5, extra_bridge_prob=0.4,
-        name="expert"
+        name="13x13"
+    ),
+    "17x17": DifficultyConfig(
+        size=17, min_islands=35, max_islands=40,
+        min_spacing=2, double_bridge_prob=0.5, extra_bridge_prob=0.4,
+        name="17x17"
     ),
 }
 

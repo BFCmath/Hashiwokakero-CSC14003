@@ -53,7 +53,7 @@ Examples:
     )
     parser.add_argument(
         "--difficulty", type=str, default="medium",
-        choices=["easy", "medium", "hard", "expert"],
+        choices=["7x7", "9x9", "11x11", "13x13", "17x17"],
         help="Puzzle difficulty level (default: medium)"
     )
     parser.add_argument(
@@ -69,7 +69,7 @@ Examples:
         help="Generate a complete test suite instead of single puzzle"
     )
     parser.add_argument(
-        "--suite-dir", type=str, default="Inputs",
+        "--suite-dir", type=str, default="Source/Inputs",
         help="Output directory for test suite (default: Inputs)"
     )
     parser.add_argument(
@@ -118,7 +118,7 @@ Examples:
         
         generated_files = []
         test_number = 1
-        difficulties = ["easy", "medium", "hard", "expert"]
+        difficulties = ["7x7", "9x9", "11x11", "13x13", "17x17"]
         
         for difficulty in difficulties:
             for i in range(args.tests_per_level):

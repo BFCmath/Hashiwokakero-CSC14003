@@ -10,7 +10,7 @@ from typing import Any, Dict, List
 from .checker import ConstraintChecker
 from .grid import Grid
 from .sat_solver import PySatSolver
-from .solvers.astar import AStarSolver
+from .solvers.astar import AStarFCSolver
 from .solvers.backtracking import BacktrackingSolver, BacktrackingFCSolver
 from .solvers.bruteforce import BruteForceSolver
 from .state import PuzzleState
@@ -41,11 +41,11 @@ class BenchmarkRunner:
         results.append(self.run_astar_variant("A* (MinConn)", Heuristic.min_conn))
         results.append(self.run_astar_variant("A* (Bottleneck)", Heuristic.bottleneck_corrected))
 
-        results.append(self.run_backtracking())
+        # results.append(self.run_backtracking())
         results.append(self.run_backtracking_fc())
         # Brute force is often too slow for non-trivial puzzles, so we might want to skip it or warn
         # For now, we include it but users should be careful with large inputs
-        # results.append(self.run_bruteforce())
+        results.append(self.run_bruteforce())
         return results
 
     def _run_with_profiling(self, name: str, func) -> BenchmarkResult:
@@ -93,7 +93,7 @@ class BenchmarkRunner:
             return BenchmarkResult("PySAT", "ERROR", 0.0, 0.0, {"error": str(e), "traceback": traceback.format_exc()}, None)
 
     def run_astar_variant(self, name: str, heuristic_func) -> BenchmarkResult:
-        solver = AStarSolver(self.checker, heuristic=heuristic_func)
+        solver = AStarFCSolver(self.checker, heuristic=heuristic_func)
         initial_state = PuzzleState(self.grid)
         tracemalloc.start()
         try:
@@ -146,7 +146,7 @@ class BenchmarkRunner:
         """Run Backtracking with Forward Checking."""
         if self.grid.height > 13:
              return BenchmarkResult(
-                algorithm="Backtracking+FC",
+                algorithm="Backtracking",
                 status="SKIPPED",
                 time_seconds=0.0,
                 memory_peak_mb=0.0,
@@ -161,7 +161,7 @@ class BenchmarkRunner:
             tracemalloc.stop()
 
             return BenchmarkResult(
-                algorithm="Backtracking+FC",
+                algorithm="Backtracking",
                 status=result.status,
                 time_seconds=result.elapsed,
                 memory_peak_mb=peak / (1024 * 1024),
@@ -170,7 +170,7 @@ class BenchmarkRunner:
             )
         except Exception as e:
             tracemalloc.stop()
-            return BenchmarkResult("Backtracking+FC", "ERROR", 0.0, 0.0, {"error": str(e)}, None)
+            return BenchmarkResult("Backtracking", "ERROR", 0.0, 0.0, {"error": str(e)}, None)
 
     def run_bruteforce(self) -> BenchmarkResult:
         if self.grid.height > 7:
