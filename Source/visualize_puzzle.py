@@ -122,9 +122,54 @@ def visualize(input_file, output_file, save_path=None):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Visualize Hashiwokakero Puzzle")
-    parser.add_argument("input_file", help="Path to input file")
-    parser.add_argument("output_file", help="Path to output file")
+    parser.add_argument("input_file", nargs='?', help="Path to input file")
+    parser.add_argument("output_file", nargs='?', help="Path to output file")
     parser.add_argument("--save", help="Path/Directory to save the visualization image", default=None)
     args = parser.parse_args()
     
-    visualize(args.input_file, args.output_file, args.save)
+    if not args.input_file:
+        # Batch mode: Process all files in Inputs/Outputs
+        current_dir = Path(__file__).parent
+        inputs_dir = current_dir / "Inputs"
+        outputs_dir = current_dir / "Outputs"
+        viz_dir = current_dir / "Plots" / "Puzzles"
+        
+        if not inputs_dir.exists():
+            print(f"Error: Inputs directory not found at {inputs_dir}")
+            sys.exit(1)
+            
+        viz_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Find all input files
+        input_files = sorted(list(inputs_dir.glob("input-*.txt")))
+        
+        if not input_files:
+            print("No input files found.")
+            sys.exit(0)
+            
+        print(f"Found {len(input_files)} input files. Generating visualizations in {viz_dir}...")
+        
+        count = 0
+        for in_file in input_files:
+            # Determine output filename: input-01.txt -> output-01.txt
+            out_name = in_file.name.replace("input", "output")
+            out_file = outputs_dir / out_name
+            
+            if out_file.exists():
+                print(f"Visualizing {in_file.name}...")
+                try:
+                    visualize(str(in_file), str(out_file), str(viz_dir))
+                    count += 1
+                except Exception as e:
+                    print(f"Failed to visualize {in_file.name}: {e}")
+            else:
+                print(f"Skipping {in_file.name}: Output file {out_name} not found.")
+                
+        print(f"Done. Generated {count} visualizations.")
+        
+    elif args.input_file and args.output_file:
+        # Single file mode
+        visualize(args.input_file, args.output_file, args.save)
+    else:
+        print("Error: Please provide both input and output files for single mode, or no arguments for batch mode.")
+        parser.print_help()
